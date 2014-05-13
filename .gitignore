@@ -1,0 +1,13 @@
+*.pyc
+*.log
+*.state
+*.egg-info
+*.venv
+*~
+*#
+.#*
+\#*#
+.*.sw[a-z]
+*.un~
+build
+dist
