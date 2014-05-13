@@ -32,7 +32,7 @@ flake8:
 pep8: flake8
 
 nosetests:
-	nosetests
+	python setup.py nosetests
 
 test: nosetests
 
