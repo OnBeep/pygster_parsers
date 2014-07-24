@@ -80,26 +80,68 @@ class OBNginxLatency(PygsterParser):
                 request_endpoint = latency_dict.get(
                     'request_path').split('/')[1]
 
-                if request_endpoint and int(latency_dict['status'][0]) == 2:
-                    if not request_endpoint in self.latencies:
-                        self.latencies[request_endpoint] = {
+                if request_endpoint:
+
+                    metric_path = '.'.join([
+                        request_endpoint,
+                        latency_dict.get('request_method'),
+                        latency_dict.get('status')
+                    ])
+
+                    count_metric = '.'.join([metric_path, 'count'])
+
+                    if count_metric not in self.latencies:
+                        self.latencies[count_metric] = {
+                            'unit': 'connections',
+                            'values': [1]
+                        }
+
+                    self.latencies[count_metric]['values'][0] += 1
+
+                    latency_metric = '.'.join([metric_path, 'latency'])
+
+                    if latency_metric not in self.latencies:
+                        self.latencies[latency_metric] = {
                             'unit': 'msec',
                             'values': []
                         }
 
-                    self.latencies[request_endpoint]['values'].append(
+                    self.latencies[latency_metric]['values'].append(
                         float(latency_dict.get('request_time')))
+
+                    bytes_sent_metric = '.'.join([metric_path, 'bytes_sent'])
+
+                    if bytes_sent_metric not in self.latencies:
+                        self.latencies[bytes_sent_metric] = {
+                            'unit': 'bytes',
+                            'values': []
+                        }
+
+                    self.latencies[bytes_sent_metric]['values'].append(
+                        float(latency_dict.get('bytes_sent')))
+
+                    request_length_metric = '.'.join([
+                        metric_path, 'request_length'])
+
+                    if request_length_metric not in self.latencies:
+                        self.latencies[request_length_metric] = {
+                            'unit': 'bytes',
+                            'values': []
+                        }
+
+                    self.latencies[request_length_metric]['values'].append(
+                        float(latency_dict.get('request_length')))
 
     def get_state(self, duration):
         metrics = []
 
-        for request_endpoint in self.latencies:
-            values = self.latencies[request_endpoint]['values']
-            unit = self.latencies[request_endpoint]['unit']
+        for metric_path in self.latencies:
+            values = self.latencies[metric_path]['values']
+            unit = self.latencies[metric_path]['unit']
 
             metrics.append(
                 MetricObject(
-                    '.'.join([request_endpoint, 'mean']),
+                    '.'.join([metric_path, 'mean']),
                     stats_helper.find_mean(values),
                     unit
                 )
@@ -107,7 +149,7 @@ class OBNginxLatency(PygsterParser):
 
             metrics.append(
                 MetricObject(
-                    '.'.join([request_endpoint, 'median']),
+                    '.'.join([metric_path, 'median']),
                     stats_helper.find_mean(values),
                     unit
                 )
@@ -116,7 +158,7 @@ class OBNginxLatency(PygsterParser):
             for pct in self.percentiles:
                 metrics.append(
                     MetricObject(
-                        '.'.join([request_endpoint, "%sth_percentile" % pct]),
+                        '.'.join([metric_path, "%sth_percentile" % pct]),
                         stats_helper.find_percentile(values, int(pct)),
                         unit
                     )
