@@ -8,7 +8,7 @@ Source:: https://github.com/OnBeep/pygster_parsers
 """
 
 __title__ = 'pygster_parsers'
-__version__ = '1.0.2'
+__version__ = '2.0.0'
 __author__ = 'Greg Albrecht  <gba@onbeep.com>'
 __copyright__ = 'Copyright 2014 OnBeep, Inc. and Contributors'
 __license__ = 'Apache License, Version 2.0'
