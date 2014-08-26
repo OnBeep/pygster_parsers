@@ -17,7 +17,7 @@ install:
 	python setup.py install
 
 uninstall:
-	pip uninstall pygster
+	pip uninstall pygster_parsers
 
 install_requirements:
 	pip install -r requirements.txt --use-mirrors
