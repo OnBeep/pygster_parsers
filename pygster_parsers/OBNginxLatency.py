@@ -37,7 +37,7 @@ class OBNginxLatency(PygsterParser):
         r'(?P<request_time>\d+\.\d+) (?P<pipe>[^\s]{1}) ' \
         r'(?P<request_length>\d+) (?P<bytes_sent>\d+) ' \
         r'(?P<http_authentication>[^\s]+) (?P<status>\d{3}) ' \
-        r'(?P<request_method>\w+) (?P<request_path>[^\s]+) ' \
+        r'(?P<request_method>\w+) (?P<uri>[^\s]+) ' \
         r'(?P<request_protocol>HTTP/\d\.\d)$'
 
     def __init__(self, option_string=None):
@@ -74,63 +74,70 @@ class OBNginxLatency(PygsterParser):
             latency_dict = latency_match.groupdict()
 
             if (latency_dict.get('request_time') and
-                    latency_dict.get('request_path') and
+                    latency_dict.get('uri') and
                     latency_dict.get('status')):
 
-                request_endpoint = latency_dict.get(
-                    'request_path').split('/')[1]
-
-                if request_endpoint:
-
+                # Strip LS '/' from request and split into REST resource/item
+                _uri = latency_dict.get('uri').lstrip('/').rstrip('/')
+                if '/' in _uri:
+                    rest_resource, rest_item = _uri.split('/')[0:2]
                     metric_path = '.'.join([
-                        request_endpoint,
+                        rest_resource,
+                        rest_item,
+                        latency_dict.get('request_method'),
+                        latency_dict.get('status')
+                    ])
+                else:
+                    metric_path = '.'.join([
+                        _uri,
+                        '__slash__',
                         latency_dict.get('request_method'),
                         latency_dict.get('status')
                     ])
 
-                    count_metric = '.'.join([metric_path, 'count'])
+                count_metric = '.'.join([metric_path, 'count'])
 
-                    if count_metric not in self.latencies:
-                        self.latencies[count_metric] = {
-                            'unit': 'connections',
-                            'values': [1]
-                        }
+                if count_metric not in self.latencies:
+                    self.latencies[count_metric] = {
+                        'unit': 'connections',
+                        'values': [1]
+                    }
 
-                    self.latencies[count_metric]['values'][0] += 1
+                self.latencies[count_metric]['values'][0] += 1
 
-                    latency_metric = '.'.join([metric_path, 'latency'])
+                latency_metric = '.'.join([metric_path, 'latency'])
 
-                    if latency_metric not in self.latencies:
-                        self.latencies[latency_metric] = {
-                            'unit': 'msec',
-                            'values': []
-                        }
+                if latency_metric not in self.latencies:
+                    self.latencies[latency_metric] = {
+                        'unit': 'msec',
+                        'values': []
+                    }
 
-                    self.latencies[latency_metric]['values'].append(
-                        float(latency_dict.get('request_time')))
+                self.latencies[latency_metric]['values'].append(
+                    float(latency_dict.get('request_time')))
 
-                    bytes_sent_metric = '.'.join([metric_path, 'bytes_sent'])
+                bytes_sent_metric = '.'.join([metric_path, 'bytes_sent'])
 
-                    if bytes_sent_metric not in self.latencies:
-                        self.latencies[bytes_sent_metric] = {
-                            'unit': 'bytes',
-                            'values': []
-                        }
+                if bytes_sent_metric not in self.latencies:
+                    self.latencies[bytes_sent_metric] = {
+                        'unit': 'bytes',
+                        'values': []
+                    }
 
-                    self.latencies[bytes_sent_metric]['values'].append(
-                        float(latency_dict.get('bytes_sent')))
+                self.latencies[bytes_sent_metric]['values'].append(
+                    float(latency_dict.get('bytes_sent')))
 
-                    request_length_metric = '.'.join([
-                        metric_path, 'request_length'])
+                request_length_metric = '.'.join([
+                    metric_path, 'request_length'])
 
-                    if request_length_metric not in self.latencies:
-                        self.latencies[request_length_metric] = {
-                            'unit': 'bytes',
-                            'values': []
-                        }
+                if request_length_metric not in self.latencies:
+                    self.latencies[request_length_metric] = {
+                        'unit': 'bytes',
+                        'values': []
+                    }
 
-                    self.latencies[request_length_metric]['values'].append(
-                        float(latency_dict.get('request_length')))
+                self.latencies[request_length_metric]['values'].append(
+                    float(latency_dict.get('request_length')))
 
     def get_state(self, duration):
         metrics = []
